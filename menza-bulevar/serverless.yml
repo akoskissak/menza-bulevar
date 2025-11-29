@@ -30,6 +30,9 @@ provider:
             - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev
             - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev/index/StudentIndex
             - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev/index/CanteenIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Restrictions-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Restrictions-dev/index/CanteenIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Restrictions-dev/index/StartDateIndex
 
 functions:
   app:

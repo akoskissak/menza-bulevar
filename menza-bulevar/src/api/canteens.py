@@ -6,7 +6,7 @@ from src.repository.repo import repo
 from src.dto.canteen_dto import UpdateCanteenDTO
 from typing import List
 from src.dto.restriction_dto import CreateRestrictionDTO
-
+from botocore.exceptions import ClientError
 
 router = APIRouter()
 canteen_service = CanteenService(repo)
@@ -135,3 +135,7 @@ def create_restriction_endpoint(
              raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         else:
              raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ClientError as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.response["Error"]["Message"])
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

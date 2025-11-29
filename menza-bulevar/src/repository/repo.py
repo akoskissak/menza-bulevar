@@ -150,12 +150,25 @@ class DynamoRepository:
     
     def add_restriction(self, data: Restriction) -> Restriction:
         new_id = str(uuid.uuid4())
-        new_restriction = data.model_copy(update={"id": new_id})
-        self._restrictions[new_id] = new_restriction
-        return new_restriction
+        item = data.model_dump()
+        item["id"] = new_id
+        item["workingHours"] = [wh.model_dump() for wh in data.workingHours]
+        restrictions_table.put_item(Item=item)
+        return data.model_copy(update={"id": new_id})
 
     def get_restrictions_by_canteen_id(self, canteen_id: str) -> List[Restriction]:
-        return [r for r in self._restrictions.values() if r.canteenId == canteen_id]
+        response = restrictions_table.query(
+            IndexName="CanteenIndex",
+            KeyConditionExpression=Key("canteenId").eq(canteen_id)
+        )
+        items = response.get("Items", [])
+        result = []
+        for item in items:
+            wh_list = [WorkingHour(**wh) for wh in item.get("workingHours", [])]
+            item["workingHours"] = wh_list
+            result.append(Restriction(**item))
+        return result
+
 
     def clear_all(self):
         for table in [students_table, canteens_table, reservations_table]:

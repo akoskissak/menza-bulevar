@@ -60,3 +60,11 @@ class Restriction(BaseModel):
     startDate: date
     endDate: date
     workingHours: List[WorkingHour]
+
+    @field_serializer('startDate')
+    def serialize_reservation_time(self, start_time_obj: time) -> str:
+        return start_time_obj.strftime("%H:%M")
+    
+    @field_serializer('endDate')
+    def serialize_reservation_date(self, end_time_obj: date) -> str:
+        return end_time_obj.isoformat()
