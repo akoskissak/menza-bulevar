@@ -36,9 +36,6 @@ functions:
     events:
       - httpApi: "*"
 
-plugins:
-  - serverless-python-requirements
-
 custom:
   pythonRequirements:
     dockerizePip: true
@@ -50,7 +47,7 @@ resources:
     StudentsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: Students
+        TableName: Students-dev
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -71,7 +68,7 @@ resources:
     CanteensTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: Canteens
+        TableName: Canteens-dev
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -83,7 +80,7 @@ resources:
     ReservationsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: Reservations
+        TableName: Reservations-dev
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -104,6 +101,35 @@ resources:
           - IndexName: CanteenIndex
             KeySchema:
               - AttributeName: canteenId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    RestrictionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Restrictions-dev
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: canteenId
+            AttributeType: S
+          - AttributeName: startDate
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: CanteenIndex
+            KeySchema:
+              - AttributeName: canteenId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StartDateIndex
+            KeySchema:
+              - AttributeName: startDate
                 KeyType: HASH
             Projection:
               ProjectionType: ALL

@@ -10,6 +10,11 @@ class ReservationService:
     def _validate_reservation_payload(self, payload: CreateReservationDTO):
         if payload.date < date.today():
             raise ValueError("Nije dozvoljeno kreirati rezervaciju za dane u prošlosti.")
+        
+        if payload.date == date.today():
+            reservation_datetime = datetime.combine(payload.date, payload.time)
+            if reservation_datetime < datetime.now():
+                raise ValueError("Nije dozvoljeno kreirati rezervaciju za termin koji je već prošao.")
             
         if payload.duration not in [30, 60]:
             raise ValueError("Trajanje rezervacije mora biti 30 ili 60 minuta.")
