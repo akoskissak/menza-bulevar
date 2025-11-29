@@ -36,9 +36,6 @@ functions:
     events:
       - httpApi: "*"
 
-plugins:
-  - serverless-python-requirements
-
 custom:
   pythonRequirements:
     dockerizePip: true
