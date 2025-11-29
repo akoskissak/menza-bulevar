@@ -1,6 +1,5 @@
 from datetime import datetime, date, time, timedelta
-from typing import Optional, List
-from src.domain.models import Reservation, Canteen, WorkingHour
+from src.domain.models import Reservation, Canteen
 from src.dto.reservation_dto import CreateReservationDTO
 from src.repository.repo import DynamoRepository
 
@@ -46,18 +45,8 @@ class ReservationService:
         slot_start = datetime.combine(date, start_time)
         slot_end = slot_start + timedelta(minutes=duration)
         
-        # Check for restrictions
-        restrictions = self.repo.get_restrictions_by_canteen_id(canteen.id)
-        active_restriction = None
-        for r in restrictions:
-            if r.startDate <= date <= r.endDate:
-                active_restriction = r
-                break
-        
-        working_hours_to_check = active_restriction.workingHours if active_restriction else canteen.workingHours
-
         is_open = False
-        for h in working_hours_to_check:
+        for h in canteen.workingHours:
             meal_start = datetime.combine(date, h.from_time)
             meal_end = datetime.combine(date, h.to_time)
             
@@ -66,7 +55,7 @@ class ReservationService:
                  break
         
         if not is_open:
-            raise ValueError("Menza nije otvorena u traženom terminu (postoji restrikcija ili van radnog vremena).")
+            raise ValueError("Menza nije otvorena u traženom terminu.")
 
         active_reservations = self.repo.get_active_reservations_by_canteen_and_date(canteen.id, date)
         
@@ -91,13 +80,6 @@ class ReservationService:
         requested_end = requested_start + timedelta(minutes=payload.duration)
 
         self._check_student_overlap(payload.studentId, requested_start, requested_end)
-
-        meal_type = self._get_meal_type(reservation_time, canteen.workingHours)
-        if not meal_type:
-            raise ValueError("Termin ne odgovara nijednom definisanom tipu obroka (doručak, ručak, večera) za ovu menzu.")
-
-        self._check_meal_type_limit(payload.studentId, payload.date, meal_type)
-
         self._check_capacity(canteen, payload.date, reservation_time, payload.duration)
         
         new_reservation = Reservation(
@@ -125,34 +107,3 @@ class ReservationService:
             
         updated_reservation = self.repo.cancel_reservation(reservation_id)
         return updated_reservation
-
-    def _check_meal_type_limit(self, student_id: str, reservation_date: date, meal_type: str):
-        todays_reservations = [
-            res for res in self.repo.get_reservations_by_student_id(student_id)
-            if res.status == "Active" and res.date == reservation_date
-        ]
-        
-        meal_type_count = 0
-        for res in todays_reservations:
-            canteen = self.repo.get_canteen_by_id(res.canteenId)
-            if canteen:
-                existing_meal_type = self._get_meal_type(res.time, canteen.workingHours)
-                
-                if existing_meal_type and existing_meal_type == meal_type:
-                    meal_type_count += 1
-        
-        if meal_type_count >= 2:
-            raise ValueError(f"Student već ima maksimalno (2) rezervacije za obrok '{meal_type.upper()}' na dan {reservation_date}.")
-
-    def _get_meal_type(self, reservation_time: time, working_hours: list[WorkingHour]) -> Optional[str]:
-        dummy_date = date.today()
-        requested_dt = datetime.combine(dummy_date, reservation_time)
-
-        for h in working_hours:
-            meal_start = datetime.combine(dummy_date, h.from_time)
-            meal_end = datetime.combine(dummy_date, h.to_time)
-            
-            if meal_start <= requested_dt < meal_end:
-                return h.meal.lower()
-        
-        return None

@@ -1,0 +1,110 @@
+service: menza-bulevar
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: eu-central-1
+  timeout: 30
+  memorySize: 512
+  environment:
+    STUDENTS_TABLE: Students
+    CANTEENS_TABLE: Canteens
+    RESERVATIONS_TABLE: Reservations
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:BatchWriteItem
+          Resource:
+            - arn:aws:dynamodb:eu-central-1:*:table/Students
+            - arn:aws:dynamodb:eu-central-1:*:table/Students/index/EmailIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Canteens
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations/index/StudentIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations/index/CanteenIndex
+
+functions:
+  app:
+    handler: app.handler
+    events:
+      - httpApi: "*"
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+    strip: false
+
+resources:
+  Resources:
+    StudentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Students
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    CanteensTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Canteens
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    ReservationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Reservations
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: studentId
+            AttributeType: S
+          - AttributeName: canteenId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: StudentIndex
+            KeySchema:
+              - AttributeName: studentId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: CanteenIndex
+            KeySchema:
+              - AttributeName: canteenId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
