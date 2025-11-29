@@ -4,14 +4,14 @@ from typing import List, Optional
 
 import boto3
 from boto3.dynamodb.conditions import Key
-
-from src.domain.models import Student, Canteen, Reservation, WorkingHour
+from src.domain.models import Student, Canteen, Reservation, WorkingHour, Restriction
 
 dynamodb = boto3.resource("dynamodb")
 
 students_table = dynamodb.Table("Students")
 canteens_table = dynamodb.Table("Canteens")
 reservations_table = dynamodb.Table("Reservations")
+restrictions_table = dynamodb.Table("Restrictions")
 
 
 class DynamoRepository:
@@ -149,12 +149,20 @@ class DynamoRepository:
             count += 1
         return count
 
+    def add_restriction(self, data: Restriction) -> Restriction:
+        new_id = str(uuid.uuid4())
+        new_restriction = data.model_copy(update={"id": new_id})
+        self._restrictions[new_id] = new_restriction
+        return new_restriction
+
+    def get_restrictions_by_canteen_id(self, canteen_id: str) -> List[Restriction]:
+        return [r for r in self._restrictions.values() if r.canteenId == canteen_id]
+
     def clear_all(self):
-        for table in [students_table, canteens_table, reservations_table]:
+        for table in [students_table, canteens_table, reservations_table, restrictions_table]:
             scan = table.scan()
             with table.batch_writer() as batch:
                 for item in scan.get("Items", []):
                     batch.delete_item(Key={"id": item["id"]})
-
 
 repo = DynamoRepository()

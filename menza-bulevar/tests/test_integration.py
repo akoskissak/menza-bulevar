@@ -1,8 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 from datetime import date, timedelta
-from main import app
+from app import app
 from src.repository.repo import repo
+import httpx
 
 @pytest.fixture(autouse=True)
 def clean_db():
@@ -11,7 +12,8 @@ def clean_db():
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    return httpx.Client(app=app, base_url="https://1wggyex1f0.execute-api.eu-central-1.amazonaws.com")
+    # return TestClient(app)
 
 @pytest.fixture
 def admin_user(client):

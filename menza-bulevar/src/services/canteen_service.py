@@ -1,7 +1,8 @@
 from datetime import datetime, date, time, timedelta
 from typing import List, Dict, Optional
 from src.services.student_service import StudentService
-from src.domain.models import Canteen, WorkingHour
+from src.domain.models import Canteen, WorkingHour, Restriction, Reservation
+from src.dto.restriction_dto import CreateRestrictionDTO
 from src.repository.repo import DynamoRepository
 
 class CanteenService:
@@ -122,3 +123,83 @@ class CanteenService:
             if h.from_time <= slot_time < h.to_time:
                 return {"meal": h.meal, "from": h.from_time, "to": h.to_time}
         return None
+    
+    def create_restriction(self, admin_id: str, canteen_id: str, payload: CreateRestrictionDTO) -> Restriction:
+        self._check_admin_rights(admin_id)
+        
+        if payload.endDate < payload.startDate:
+            raise ValueError("Datum završetka ne može biti pre datuma početka.")
+
+        canteen = self.repo.get_canteen_by_id(canteen_id)
+        if not canteen:
+            raise ValueError(f"Canteen sa ID-jem '{canteen_id}' nije pronađena.")
+
+        # Validate working hours are within original working hours
+        for r_wh in payload.workingHours:
+            is_valid = False
+            for c_wh in canteen.workingHours:
+                if r_wh.meal == c_wh.meal:
+                    # Check if restriction time is within canteen time
+                    if r_wh.from_time >= c_wh.from_time and r_wh.to_time <= c_wh.to_time:
+                        is_valid = True
+                        break
+            if not is_valid:
+                raise ValueError(f"Restrikcija za obrok '{r_wh.meal}' je van originalnog radnog vremena menze.")
+
+        # Check for overlapping restrictions
+        existing_restrictions = self.repo.get_restrictions_by_canteen_id(canteen_id)
+        for r in existing_restrictions:
+            if not (payload.endDate < r.startDate or payload.startDate > r.endDate):
+                raise ValueError("Postoji preklapanje sa postojećom restrikcijom.")
+
+        restriction = Restriction(
+            canteenId=canteen_id,
+            startDate=payload.startDate,
+            endDate=payload.endDate,
+            workingHours=payload.workingHours
+        )
+        
+        saved_restriction = self.repo.add_restriction(restriction)
+        
+        self._process_restriction_cancellations(canteen, saved_restriction)
+        
+        return saved_restriction
+
+    def _process_restriction_cancellations(self, canteen: Canteen, restriction: Restriction):
+        # Iterate through all dates in the restriction period
+        current_date = restriction.startDate
+        while current_date <= restriction.endDate:
+            reservations = self.repo.get_active_reservations_by_canteen_and_date(canteen.id, current_date)
+            
+            for res in reservations:
+                if not self._is_reservation_valid_under_restriction(res, restriction):
+                    self.repo.cancel_reservation(res.id)
+                    self._send_cancellation_email(res, canteen)
+            
+            current_date += timedelta(days=1)
+
+    def _is_reservation_valid_under_restriction(self, res: Reservation, restriction: Restriction) -> bool:
+        res_start_dt = datetime.combine(res.date, res.time)
+        res_end_dt = res_start_dt + timedelta(minutes=res.duration)
+        
+        res_start = res_start_dt.time()
+        res_end = res_end_dt.time()
+        
+        # If reservation crosses midnight, this simple logic might fail, but assuming daily working hours for now.
+        # Actually, working hours are usually within a day.
+        
+        for wh in restriction.workingHours:
+            # Check if reservation fits completely within this working hour
+            # Note: wh.to_time might be smaller than wh.from_time if it crosses midnight, but let's assume standard hours for now.
+            
+            if wh.from_time <= res_start and res_end <= wh.to_time:
+                return True
+                
+        return False
+
+    def _send_cancellation_email(self, res: Reservation, canteen: Canteen):
+        # Mock email sending
+        student = self.repo.get_student_by_id(res.studentId)
+        student_email = student.email if student else "unknown"
+        print(f"SENDING EMAIL TO: {student_email}")
+        print(f"Vaša rezervacija u menzi {canteen.name}, za termin {res.date} {res.time} je otkazana. Molimo vas potražite novi termin.")

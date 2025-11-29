@@ -1,4 +1,4 @@
-service: menza-bulevar
+service: menza-bulevar-prod
 
 provider:
   name: aws
@@ -7,9 +7,10 @@ provider:
   timeout: 30
   memorySize: 512
   environment:
-    STUDENTS_TABLE: Students
-    CANTEENS_TABLE: Canteens
-    RESERVATIONS_TABLE: Reservations
+    STUDENTS_TABLE: Students-dev
+    CANTEENS_TABLE: Canteens-dev
+    RESERVATIONS_TABLE: Reservations-dev
+    RESTRICTIONS_TABLE: Restrictions-dev
   iam:
     role:
       statements:
@@ -23,12 +24,15 @@ provider:
             - dynamodb:Scan
             - dynamodb:BatchWriteItem
           Resource:
-            - arn:aws:dynamodb:eu-central-1:*:table/Students
-            - arn:aws:dynamodb:eu-central-1:*:table/Students/index/EmailIndex
-            - arn:aws:dynamodb:eu-central-1:*:table/Canteens
-            - arn:aws:dynamodb:eu-central-1:*:table/Reservations
-            - arn:aws:dynamodb:eu-central-1:*:table/Reservations/index/StudentIndex
-            - arn:aws:dynamodb:eu-central-1:*:table/Reservations/index/CanteenIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Students-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Students-dev/index/EmailIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Canteens-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev/index/StudentIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev/index/CanteenIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Restrictions-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Restrictions-dev/index/CanteenIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Restrictions-dev/index/StartDateIndex
 
 functions:
   app:
@@ -47,7 +51,7 @@ resources:
     StudentsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: Students
+        TableName: Students-dev
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -68,7 +72,7 @@ resources:
     CanteensTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: Canteens
+        TableName: Canteens-dev
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -80,7 +84,7 @@ resources:
     ReservationsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: Reservations
+        TableName: Reservations-dev
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -101,6 +105,35 @@ resources:
           - IndexName: CanteenIndex
             KeySchema:
               - AttributeName: canteenId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    RestrictionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Restrictions-dev
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: canteenId
+            AttributeType: S
+          - AttributeName: startDate
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: CanteenIndex
+            KeySchema:
+              - AttributeName: canteenId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StartDateIndex
+            KeySchema:
+              - AttributeName: startDate
                 KeyType: HASH
             Projection:
               ProjectionType: ALL

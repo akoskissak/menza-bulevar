@@ -53,3 +53,18 @@ class Reservation(BaseModel):
     @field_serializer('date')
     def serialize_reservation_date(self, date_obj: date) -> str:
         return date_obj.isoformat()
+    
+class Restriction(BaseModel):
+    id: Optional[str] = None
+    canteenId: str
+    startDate: date
+    endDate: date
+    workingHours: List[WorkingHour]
+
+    @field_serializer('startDate')
+    def serialize_reservation_time(self, start_time_obj: time) -> str:
+        return start_time_obj.strftime("%H:%M")
+    
+    @field_serializer('endDate')
+    def serialize_reservation_date(self, end_time_obj: date) -> str:
+        return end_time_obj.isoformat()

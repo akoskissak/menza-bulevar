@@ -37,3 +37,10 @@ class Reservation(BaseModel):
     @field_serializer('time')
     def serialize_reservation_time(self, time_obj: time) -> str:
         return time_obj.strftime("%H:%M")
+
+class Restriction(BaseModel):
+    id: Optional[str] = None
+    canteenId: str
+    startDate: date
+    endDate: date
+    workingHours: List[WorkingHour]
