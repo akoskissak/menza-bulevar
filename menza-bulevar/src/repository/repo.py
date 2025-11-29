@@ -9,10 +9,10 @@ from src.domain.models import Student, Canteen, Reservation, WorkingHour, Restri
 
 dynamodb = boto3.resource("dynamodb")
 
-students_table = dynamodb.Table("Students")
-canteens_table = dynamodb.Table("Canteens")
-reservations_table = dynamodb.Table("Reservations")
-restrictions_table = dynamodb.Table("Restrictions")
+students_table = dynamodb.Table("Students-dev")
+canteens_table = dynamodb.Table("Canteens-dev")
+reservations_table = dynamodb.Table("Reservations-dev")
+restrictions_table = dynamodb.Table("Restrictions-dev")
 
 class DynamoRepository:
     def add_student(self, data: Student) -> Student:

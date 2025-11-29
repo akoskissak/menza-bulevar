@@ -7,9 +7,10 @@ provider:
   timeout: 30
   memorySize: 512
   environment:
-    STUDENTS_TABLE: Students
-    CANTEENS_TABLE: Canteens
-    RESERVATIONS_TABLE: Reservations
+    STUDENTS_TABLE: Students-dev
+    CANTEENS_TABLE: Canteens-dev
+    RESERVATIONS_TABLE: Reservations-dev
+    RESTRICTIONS_TABLE: Restrictions-dev
   iam:
     role:
       statements:
@@ -23,12 +24,12 @@ provider:
             - dynamodb:Scan
             - dynamodb:BatchWriteItem
           Resource:
-            - arn:aws:dynamodb:eu-central-1:*:table/Students
-            - arn:aws:dynamodb:eu-central-1:*:table/Students/index/EmailIndex
-            - arn:aws:dynamodb:eu-central-1:*:table/Canteens
-            - arn:aws:dynamodb:eu-central-1:*:table/Reservations
-            - arn:aws:dynamodb:eu-central-1:*:table/Reservations/index/StudentIndex
-            - arn:aws:dynamodb:eu-central-1:*:table/Reservations/index/CanteenIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Students-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Students-dev/index/EmailIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Canteens-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev/index/StudentIndex
+            - arn:aws:dynamodb:eu-central-1:*:table/Reservations-dev/index/CanteenIndex
 
 functions:
   app:
