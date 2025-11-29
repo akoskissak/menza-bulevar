@@ -1,4 +1,4 @@
-service: menza-bulevar
+service: menza-bulevar-prod
 
 provider:
   name: aws
