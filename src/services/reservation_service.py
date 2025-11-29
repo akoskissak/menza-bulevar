@@ -1,5 +1,6 @@
 from datetime import datetime, date, time, timedelta
-from src.domain.models import Reservation, Canteen
+from typing import Optional, List
+from src.domain.models import Reservation, Canteen, WorkingHour
 from src.dto.reservation_dto import CreateReservationDTO
 from src.repository.repo import MemoryRepository
 
