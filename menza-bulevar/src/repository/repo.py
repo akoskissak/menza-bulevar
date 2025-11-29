@@ -48,9 +48,9 @@ class DynamoRepository:
 
     def add_canteen(self, data: Canteen) -> Canteen:
         new_id = str(uuid.uuid4())
-        item = data.model_dump(by_alias=True)
+        item = data.model_dump()
         item["id"] = new_id
-        item["workingHours"] = [wh.model_dump(by_alias=True) for wh in data.workingHours]
+        item["workingHours"] = [wh.model_dump() for wh in data.workingHours]
         canteens_table.put_item(Item=item)
         return data.model_copy(update={"id": new_id})
 
@@ -92,11 +92,10 @@ class DynamoRepository:
         new_id = str(uuid.uuid4())
         item = data.model_dump()
         item["id"] = new_id
-        item["date"] = item["date"].isoformat()
+        # Serialize time
         item["time"] = data.time.strftime("%H:%M")
         reservations_table.put_item(Item=item)
         return data.model_copy(update={"id": new_id})
-
 
     def get_reservation_by_id(self, reservation_id: str) -> Optional[Reservation]:
         response = reservations_table.get_item(Key={"id": reservation_id})
