@@ -127,9 +127,24 @@ class CanteenService:
     def create_restriction(self, admin_id: str, canteen_id: str, payload: CreateRestrictionDTO) -> Restriction:
         self._check_admin_rights(admin_id)
         
+        if payload.endDate < payload.startDate:
+            raise ValueError("Datum završetka ne može biti pre datuma početka.")
+
         canteen = self.repo.get_canteen_by_id(canteen_id)
         if not canteen:
             raise ValueError(f"Canteen sa ID-jem '{canteen_id}' nije pronađena.")
+
+        # Validate working hours are within original working hours
+        for r_wh in payload.workingHours:
+            is_valid = False
+            for c_wh in canteen.workingHours:
+                if r_wh.meal == c_wh.meal:
+                    # Check if restriction time is within canteen time
+                    if r_wh.from_time >= c_wh.from_time and r_wh.to_time <= c_wh.to_time:
+                        is_valid = True
+                        break
+            if not is_valid:
+                raise ValueError(f"Restrikcija za obrok '{r_wh.meal}' je van originalnog radnog vremena menze.")
 
         # Check for overlapping restrictions
         existing_restrictions = self.repo.get_restrictions_by_canteen_id(canteen_id)
