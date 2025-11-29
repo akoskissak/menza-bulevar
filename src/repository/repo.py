@@ -1,13 +1,14 @@
 import uuid
 from typing import Dict, List, Optional
 from datetime import date
-from src.domain.models import Student, Canteen, Reservation
+from src.domain.models import Student, Canteen, Reservation, Restriction
 
 class MemoryRepository:
     def __init__(self):
         self._students: Dict[str, Student] = {}
         self._canteens: Dict[str, Canteen] = {}
         self._reservations: Dict[str, Reservation] = {}
+        self._restrictions: Dict[str, Restriction] = {}
 
     def add_student(self, data: Student) -> Student:
         if self.get_student_by_email(data.email):
@@ -87,9 +88,19 @@ class MemoryRepository:
             count += 1
         return count
 
+    def add_restriction(self, data: Restriction) -> Restriction:
+        new_id = str(uuid.uuid4())
+        new_restriction = data.model_copy(update={"id": new_id})
+        self._restrictions[new_id] = new_restriction
+        return new_restriction
+
+    def get_restrictions_by_canteen_id(self, canteen_id: str) -> List[Restriction]:
+        return [r for r in self._restrictions.values() if r.canteenId == canteen_id]
+
     def clear_all(self):
         self._students.clear()
         self._canteens.clear()
         self._reservations.clear()
+        self._restrictions.clear()
 
 repo = MemoryRepository()
