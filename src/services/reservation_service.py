@@ -45,8 +45,18 @@ class ReservationService:
         slot_start = datetime.combine(date, start_time)
         slot_end = slot_start + timedelta(minutes=duration)
         
+        # Check for restrictions
+        restrictions = self.repo.get_restrictions_by_canteen_id(canteen.id)
+        active_restriction = None
+        for r in restrictions:
+            if r.startDate <= date <= r.endDate:
+                active_restriction = r
+                break
+        
+        working_hours_to_check = active_restriction.workingHours if active_restriction else canteen.workingHours
+
         is_open = False
-        for h in canteen.workingHours:
+        for h in working_hours_to_check:
             meal_start = datetime.combine(date, h.from_time)
             meal_end = datetime.combine(date, h.to_time)
             
@@ -55,7 +65,7 @@ class ReservationService:
                  break
         
         if not is_open:
-            raise ValueError("Menza nije otvorena u traženom terminu.")
+            raise ValueError("Menza nije otvorena u traženom terminu (postoji restrikcija ili van radnog vremena).")
 
         active_reservations = self.repo.get_active_reservations_by_canteen_and_date(canteen.id, date)
         

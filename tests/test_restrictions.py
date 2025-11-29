@@ -214,3 +214,46 @@ def test_email_sending_mocked(service, repo, admin_student, regular_student, can
         args, _ = mock_email.call_args
         assert args[0].id == res1.id
         assert args[1].id == canteen.id
+
+def test_create_reservation_during_restriction(repo, admin_student, regular_student, canteen):
+    from src.services.reservation_service import ReservationService
+    from src.dto.reservation_dto import CreateReservationDTO
+    
+    res_service = ReservationService(repo)
+    canteen_service = CanteenService(repo)
+
+    # Use a future date
+    future_date = date.today() + timedelta(days=5)
+
+    # Create restriction: 08:00 - 09:00 (Original was 08:00 - 10:00)
+    wh = WorkingHour(meal="breakfast", **{"from": time(8, 0), "to": time(9, 0)})
+    dto = CreateRestrictionDTO(
+        startDate=future_date,
+        endDate=future_date,
+        workingHours=[wh]
+    )
+    canteen_service.create_restriction(admin_student.id, canteen.id, dto)
+
+    # Try to create reservation at 09:00 (Should fail)
+    res_dto = CreateReservationDTO(
+        studentId=regular_student.id,
+        canteenId=canteen.id,
+        date=future_date,
+        time=time(9, 0),
+        duration=60
+    )
+    
+    with pytest.raises(ValueError, match="Menza nije otvorena"):
+        res_service.create_reservation(res_dto)
+
+    # Try to create reservation at 08:00 (Should succeed)
+    res_dto_valid = CreateReservationDTO(
+        studentId=regular_student.id,
+        canteenId=canteen.id,
+        date=future_date,
+        time=time(8, 0),
+        duration=60
+    )
+    
+    res = res_service.create_reservation(res_dto_valid)
+    assert res.status == "Active"
