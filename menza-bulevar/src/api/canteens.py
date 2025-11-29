@@ -1,10 +1,11 @@
 from datetime import date, time
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Header
-from src.domain.models import Canteen
+from src.domain.models import Canteen, Restriction
 from src.services.canteen_service import CanteenService
 from src.repository.repo import repo
 from src.dto.canteen_dto import UpdateCanteenDTO
 from typing import List
+from src.dto.restriction_dto import CreateRestrictionDTO
 
 
 router = APIRouter()
@@ -117,3 +118,20 @@ def delete_canteen_endpoint(canteen_id: str, admin_id: str = Depends(get_admin_i
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    
+@router.post("/{canteen_id}/restrictions", response_model=Restriction, status_code=status.HTTP_201_CREATED)
+def create_restriction_endpoint(
+    canteen_id: str, 
+    payload: CreateRestrictionDTO, 
+    student_id: str = Depends(get_admin_id)
+):
+    try:
+        restriction = canteen_service.create_restriction(student_id, canteen_id, payload)
+        return restriction
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        if "nije pronađena" in str(e):
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        else:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
